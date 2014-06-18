@@ -1,6 +1,39 @@
 var exec = require('child_process').exec;
 var exists = require('fs').existsSync;
 var ffprobe = __dirname + '/ffprobe';
+var fmt = require('util').format;
+
+exports.streams = function(src, cb) {
+  if (!exists(src)) {
+    cb(new Error('ffprobe-osx: source not found'));
+    return;
+  }
+
+  var cmd = fmt('"%s" -i "%s" -show_streams -v error', ffprobe, src);
+  exec(cmd, function (err, stdout, stderr) {
+    if (err !== null) {
+      cb(new Error('ffprobe-osx: parsing error'));
+      return;
+    }
+    cb(null, parseStreams(stdout));
+  })
+}
+
+exports.format =  function(src, cb) {
+  if (!exists(src)) {
+    cb(new Error('ffprobe-osx: source not found'));
+    return;
+  }
+
+  var cmd = fmt('"%s" -i "%s" -show_format -v error', ffprobe, src);
+  exec(cmd, function (err, stdout, stderr) {
+    if (err !== null) {
+      cb(new Error('ffprobe-osx: parsing error'));
+      return;
+    }
+    cb(null, parseFormat(stdout));
+  })
+}
 
 function video(o) {
   var obj = {};
@@ -90,36 +123,4 @@ function parseFormat(str) {
     obj[e[0].toLowerCase().replace(/[\W]/g, '_')] = e[1];
   });
   return format(obj);
-}
-
-exports.streams = function(src, cb) {
-  if (!exists(src)) {
-    cb(new Error('ffprobe-osx: source not found'));
-    return;
-  }
-
-  exec(ffprobe + ' -i ' + src + ' -show_streams -v error',
-    function (err, stdout, stderr) {
-    if (err !== null) {
-      cb(new Error('ffprobe-osx: parsing error'));
-      return;
-    }
-    cb(null, parseStreams(stdout));
-  })
-}
-
-exports.format =  function(src, cb) {
-  if (!exists(src)) {
-    cb(new Error('ffprobe-osx: source not found'));
-    return;
-  }
-
-  exec(ffprobe + ' -i ' + src + ' -show_format -v error',
-    function (err, stdout, stderr) {
-    if (err !== null) {
-      cb(new Error('ffprobe-osx: parsing error'));
-      return;
-    }
-    cb(null, parseFormat(stdout));
-  })
 }
